@@ -1,7 +1,8 @@
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import pytorch_lightning as pl
+
 
 class LinearClassifier(pl.LightningModule):
     def __init__(self, input_dim, hidden_dim=128, output_dim=3, lr=1e-3):
@@ -17,15 +18,15 @@ class LinearClassifier(pl.LightningModule):
         return self.fc2(x)
 
     def training_step(self, batch, batch_idx):
-        logits = self.forward(batch['features'])
-        loss = F.cross_entropy(logits, batch['label'])
+        logits = self.forward(batch["features"])
+        loss = F.cross_entropy(logits, batch["label"])
         self.log("train_loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        logits = self.forward(batch['features'])
-        loss = F.cross_entropy(logits, batch['label'])
-        acc = (logits.argmax(dim=1) == batch['label']).float().mean()
+        logits = self.forward(batch["features"])
+        loss = F.cross_entropy(logits, batch["label"])
+        acc = (logits.argmax(dim=1) == batch["label"]).float().mean()
         self.log("val_loss", loss, prog_bar=True)
         self.log("val_acc", acc, prog_bar=True)
 
