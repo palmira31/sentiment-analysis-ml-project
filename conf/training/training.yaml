@@ -1,0 +1,4 @@
+batch_size: 32
+max_epochs: 7
+num_workers: 0
+max_features: 2000

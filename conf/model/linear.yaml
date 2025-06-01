@@ -1,0 +1,3 @@
+name: linear
+_target_: linear_model.LinearClassifier
+input_dim: ${training.max_features}

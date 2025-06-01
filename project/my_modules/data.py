@@ -17,10 +17,11 @@ class MyTextDataset(Dataset):
         vectorizer: Any = None,
         label_encoder: LabelEncoder = None,
         dataframe: pd.DataFrame = None,
+        max_features: int = 10000,
     ):
         self.split = split
         self.vectorizer = (
-            vectorizer if vectorizer else TfidfVectorizer(max_features=10000)
+            vectorizer if vectorizer else TfidfVectorizer(max_features=max_features)
         )
         self.label_encoder = label_encoder if label_encoder else LabelEncoder()
 
@@ -58,24 +59,34 @@ class MyTextDataset(Dataset):
 
 
 class MyDataModule(pl.LightningDataModule):
-    def __init__(self, data_dir: str, batch_size: int = 32, num_workers: int = 0):
+    def __init__(
+        self,
+        data_dir: str,
+        batch_size: int = 32,
+        num_workers: int = 0,
+        max_features: int = 10000,
+    ):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.vectorizer = TfidfVectorizer(max_features=10000)
+        self.max_features = max_features
+        self.vectorizer = TfidfVectorizer(max_features=self.max_features)
         self.label_encoder = LabelEncoder()
 
     def prepare_data(self):
-        pass  # Тут можно загружать и кэшировать данные
+        pass
 
     def setup(self, stage=None):
         if stage in (None, "fit"):
             full_df = pd.read_csv(f"{self.data_dir}/train.csv")
-            full_df = full_df.dropna(subset=["gold_label"])  # Удалим NaN перед сплитом
+            full_df = full_df.dropna(subset=["gold_label"])
 
             train_df, val_df = train_test_split(
-                full_df, test_size=0.2, random_state=42, stratify=full_df["gold_label"]
+                full_df,
+                test_size=0.2,
+                random_state=42,
+                stratify=full_df["gold_label"],
             )
 
             self.train_dataset = MyTextDataset(
@@ -83,12 +94,14 @@ class MyDataModule(pl.LightningDataModule):
                 label_encoder=self.label_encoder,
                 dataframe=train_df,
                 split="train",
+                max_features=self.max_features,
             )
             self.val_dataset = MyTextDataset(
                 vectorizer=self.vectorizer,
                 label_encoder=self.label_encoder,
                 dataframe=val_df,
                 split="val",
+                max_features=self.max_features,
             )
 
         if stage in (None, "test"):
@@ -97,6 +110,7 @@ class MyDataModule(pl.LightningDataModule):
                 split="test",
                 vectorizer=self.vectorizer,
                 label_encoder=self.label_encoder,
+                max_features=self.max_features,
             )
 
     def train_dataloader(self):

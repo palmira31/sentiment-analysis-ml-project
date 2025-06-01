@@ -20,15 +20,15 @@ class LinearClassifier(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         logits = self.forward(batch["features"])
         loss = F.cross_entropy(logits, batch["label"])
-        self.log("train_loss", loss)
+        self.log("train_loss", loss, on_epoch=True, on_step=False)
         return loss
 
     def validation_step(self, batch, batch_idx):
         logits = self.forward(batch["features"])
         loss = F.cross_entropy(logits, batch["label"])
         acc = (logits.argmax(dim=1) == batch["label"]).float().mean()
-        self.log("val_loss", loss, prog_bar=True)
-        self.log("val_acc", acc, prog_bar=True)
+        self.log("val_loss", loss, prog_bar=True, on_epoch=True, on_step=False)
+        self.log("val_acc", acc, prog_bar=True, on_epoch=True, on_step=False)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)

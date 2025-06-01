@@ -1,79 +1,93 @@
-import argparse
 import os
+import subprocess
 
+import hydra
 import pytorch_lightning as pl
 import torch
 from linear_model import LinearClassifier
+from omegaconf import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import MLFlowLogger
 from rnn_model import RNNClassifier
 
 from data import MyDataModule
 
 
-def main():
-    """
-    Запускает обучение модели.
+def get_git_commit() -> str:
+    """Получает текущий git commit hash"""
+    try:
+        commit_hash = (
+            subprocess.check_output(["git", "rev-parse", "HEAD"])
+            .decode("ascii")
+            .strip()
+        )
+        return commit_hash
+    except Exception:
+        return "unknown"
 
-    Параметры:
-    - model_name: 'linear' или 'rnn' — выбирает модель для обучения.
-    - log_name: имя папки для логов (сохранится в C:\\Users\\User\\Desktop\\MLOps\\training_logs).
 
-    Пример запуска:
-    python train.py --model rnn --log_name experiment_rnn
-
-    Для просмотра логов TensorBoard:
-    tensorboard --logdir=C:\\Users\\User\\Desktop\\MLOps\\training_logs\\experiment_rnn
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--model",
-        type=str,
-        choices=["linear", "rnn"],
-        default="linear",
-        help="Выберите модель для тренировки",
+def train(cfg: DictConfig):
+    # MLflow логгер
+    mlf_logger = MLFlowLogger(
+        experiment_name=cfg.logging.experiment_name,
+        tracking_uri=cfg.logging.tracking_uri,
     )
-    parser.add_argument(
-        "--log_name", type=str, default="default_run", help="Имя папки для логов"
+
+    # Логируем параметры вручную
+    mlf_logger.log_hyperparams(
+        {
+            "model_name": cfg.model.name,
+            "batch_size": cfg.training.batch_size,
+            "max_epochs": cfg.training.max_epochs,
+            "max_features": cfg.training.max_features,
+            "git_commit": get_git_commit(),
+        }
     )
-    parser.add_argument(
-        "--data_dir",
-        type=str,
-        default=r"C:\Users\User\Desktop\MLOps\Data\1",
-        help="Путь к данным",
-    )
-    parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--max_epochs", type=int, default=10)
-    args = parser.parse_args()
 
-    base_log_dir = r"C:\Users\User\Desktop\MLOps\training_logs"
-
-    logger = TensorBoardLogger(save_dir=base_log_dir, name=args.log_name)
-
+    # Чекпоинты
     checkpoint_callback = ModelCheckpoint(
-        dirpath=os.path.join(base_log_dir, args.log_name, "checkpoints"),
+        dirpath=os.path.join(cfg.logging.checkpoint_dir, cfg.logging.experiment_name),
         filename="{epoch}-{val_loss:.2f}",
         save_top_k=1,
         monitor="val_loss",
         mode="min",
     )
 
-    dm = MyDataModule(data_dir=args.data_dir, batch_size=args.batch_size)
+    # Датамодуль
+    datamodule = MyDataModule(
+        data_dir=cfg.data_loading.data_dir,
+        batch_size=cfg.training.batch_size,
+        num_workers=cfg.training.num_workers,
+        max_features=cfg.training.max_features,
+    )
 
-    if args.model == "linear":
-        model = LinearClassifier(input_dim=10000)  # input_dim для tfidf
+    # Модель
+    if cfg.model.name == "linear":
+        model = LinearClassifier(input_dim=cfg.model.input_dim)
+    elif cfg.model.name == "rnn":
+        model = RNNClassifier(
+            input_dim=cfg.model.input_dim,
+            hidden_dim=cfg.model.hidden_dim,
+            output_dim=cfg.model.output_dim,
+            lr=cfg.model.lr,
+        )
     else:
-        model = RNNClassifier(input_dim=10000, hidden_dim=128, output_dim=3, lr=1e-3)
+        raise ValueError(f"Unknown model name: {cfg.model.name}")
 
     trainer = pl.Trainer(
-        max_epochs=args.max_epochs,
-        logger=logger,
+        max_epochs=cfg.training.max_epochs,
+        logger=mlf_logger,
         callbacks=[checkpoint_callback],
         accelerator="auto",
         devices=torch.cuda.device_count() if torch.cuda.is_available() else 1,
     )
 
-    trainer.fit(model, datamodule=dm)
+    trainer.fit(model, datamodule=datamodule)
+
+
+@hydra.main(config_path="../../conf", config_name="config", version_base=None)
+def main(cfg: DictConfig):
+    train(cfg)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,6 @@
+name: rnn
+_target_: rnn_model.RNNClassifier
+input_dim: ${training.max_features}
+hidden_dim: 128
+output_dim: 3
+lr: 0.001

@@ -1,0 +1,9 @@
+defaults:
+  - data_loading: data_loading
+  - model: linear
+  - training: training
+  - logging: logging
+  - inference: inference
+hydra:
+  run:
+    dir: ${hydra:runtime.cwd}/plots/outputs/${now:%Y-%m-%d_%H-%M-%S}

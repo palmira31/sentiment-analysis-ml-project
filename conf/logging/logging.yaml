@@ -1,0 +1,4 @@
+experiment_name: "experiment_linear_1"
+tracking_uri: "http://127.0.0.1:8080"
+mlflow_save_dir: "${hydra:runtime.cwd}/plots/mlruns"
+checkpoint_dir: "${hydra:runtime.cwd}/model_checkpoints"
