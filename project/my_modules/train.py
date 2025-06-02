@@ -2,6 +2,7 @@ import os
 import subprocess
 
 import hydra
+import joblib
 import pytorch_lightning as pl
 import torch
 from linear_model import LinearClassifier
@@ -83,6 +84,43 @@ def train(cfg: DictConfig):
     )
 
     trainer.fit(model, datamodule=datamodule)
+
+    # Сохраняем vectorizer и encoder
+    artifacts_dir = os.path.join(
+        cfg.logging.checkpoint_dir, cfg.logging.experiment_name
+    )
+    os.makedirs(artifacts_dir, exist_ok=True)
+
+    vectorizer = datamodule.vectorizer
+    label_encoder = datamodule.label_encoder
+    joblib.dump(vectorizer, os.path.join(artifacts_dir, "vectorizer.pkl"))
+    joblib.dump(label_encoder, os.path.join(artifacts_dir, "label_encoder.pkl"))
+
+    # Сохраняем веса модели вручную (помимо lightning checkpoint)
+    model_path = os.path.join(artifacts_dir, "model.pt")
+    torch.save(model.state_dict(), model_path)
+
+    # --- Экспортируем модель в ONNX ---
+    model.eval()
+    # Берём один батч из train_dataloader (только features)
+    batch = next(iter(datamodule.train_dataloader()))
+    example_input = batch["features"]
+    example_input = example_input.to(next(model.parameters()).device)
+
+    onnx_path = os.path.join(artifacts_dir, "model.onnx")
+
+    torch.onnx.export(
+        model,
+        example_input,
+        onnx_path,
+        export_params=True,
+        opset_version=12,
+        input_names=["input"],
+        output_names=["output"],
+        dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
+    )
+
+    print(f"Model exported to ONNX format at: {onnx_path}")
 
 
 @hydra.main(config_path="../../conf", config_name="config", version_base=None)
