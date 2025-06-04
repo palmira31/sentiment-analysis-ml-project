@@ -1,0 +1,2 @@
+onnx_path: "model_checkpoints/linear_model_03/model.onnx"
+trt_path: "model_checkpoints/linear_model_03/model.trt"

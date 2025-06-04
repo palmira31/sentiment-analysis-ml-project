@@ -28,13 +28,11 @@ def get_git_commit() -> str:
 
 
 def train(cfg: DictConfig):
-    # MLflow логгер
     mlf_logger = MLFlowLogger(
         experiment_name=cfg.logging.experiment_name,
         tracking_uri=cfg.logging.tracking_uri,
     )
 
-    # Логируем параметры вручную
     mlf_logger.log_hyperparams(
         {
             "model_name": cfg.model.name,
@@ -45,7 +43,6 @@ def train(cfg: DictConfig):
         }
     )
 
-    # Чекпоинты
     checkpoint_callback = ModelCheckpoint(
         dirpath=os.path.join(cfg.logging.checkpoint_dir, cfg.logging.experiment_name),
         filename="{epoch}-{val_loss:.2f}",
@@ -54,7 +51,6 @@ def train(cfg: DictConfig):
         mode="min",
     )
 
-    # Датамодуль
     datamodule = MyDataModule(
         data_dir=cfg.data_loading.data_dir,
         batch_size=cfg.training.batch_size,
@@ -62,7 +58,6 @@ def train(cfg: DictConfig):
         max_features=cfg.training.max_features,
     )
 
-    # Модель
     if cfg.model.name == "linear":
         model = LinearClassifier(input_dim=cfg.model.input_dim)
     elif cfg.model.name == "rnn":
@@ -85,7 +80,6 @@ def train(cfg: DictConfig):
 
     trainer.fit(model, datamodule=datamodule)
 
-    # Сохраняем vectorizer и encoder
     artifacts_dir = os.path.join(
         cfg.logging.checkpoint_dir, cfg.logging.experiment_name
     )
@@ -96,13 +90,10 @@ def train(cfg: DictConfig):
     joblib.dump(vectorizer, os.path.join(artifacts_dir, "vectorizer.pkl"))
     joblib.dump(label_encoder, os.path.join(artifacts_dir, "label_encoder.pkl"))
 
-    # Сохраняем веса модели вручную (помимо lightning checkpoint)
     model_path = os.path.join(artifacts_dir, "model.pt")
     torch.save(model.state_dict(), model_path)
 
-    # --- Экспортируем модель в ONNX ---
     model.eval()
-    # Берём один батч из train_dataloader (только features)
     batch = next(iter(datamodule.train_dataloader()))
     example_input = batch["features"]
     example_input = example_input.to(next(model.parameters()).device)

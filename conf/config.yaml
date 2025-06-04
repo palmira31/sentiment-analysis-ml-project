@@ -1,9 +1,10 @@
 defaults:
   - data_loading: data_loading
-  - model: linear
+  - model: rnn
   - training: training
   - logging: logging
   - inference: inference
+  - convert: convert
 hydra:
   run:
     dir: ${hydra:runtime.cwd}/plots/outputs/${now:%Y-%m-%d_%H-%M-%S}
