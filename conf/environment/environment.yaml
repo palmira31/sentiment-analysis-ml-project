@@ -1,0 +1,6 @@
+python_version: "3.9"
+mlflow:
+  tracking_uri: "http://127.0.0.1:8080" # MLflow сервер
+  registry_uri: "sqlite:///mlflow.db" # База данных для Model Registry
+  artifacts_dir: "./artifacts" # Директория для артефактов MLflow
+  tracking_dir: "./mlruns" # Директория для метаданных экспериментов

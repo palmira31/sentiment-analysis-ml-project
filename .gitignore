@@ -178,3 +178,8 @@ Data/
 training_logs/
 lightning_logs/
 /Data
+/artifacts
+mlruns/
+plots/
+mlflow.db
+test_results/

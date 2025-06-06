@@ -21,16 +21,26 @@ mlflow_port_option = typer.Option(8080, help="Порт для MLflow UI")
 
 
 def run_mlflow_ui(port: int = 8080):
-    """Запускает MLflow UI на указанном порту."""
-    mlflow_dir = Path("plots/mlruns")
-    mlflow_dir.mkdir(parents=True, exist_ok=True)
-
-    cmd = ["mlflow", "ui", "--backend-store-uri", str(mlflow_dir), "--port", str(port)]
+    """Запускает MLflow server на указанном порту."""
+    cmd = [
+        "python",
+        "-m",
+        "mlflow",
+        "server",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        str(port),
+        "--backend-store-uri",
+        "./mlruns",
+        "--default-artifact-root",
+        "./artifacts",
+    ]
     try:
         subprocess.Popen(cmd)
-        print(f"[green]MLflow UI запущен на http://127.0.0.1:{port}[/green]")
+        print(f"[green]MLflow server запущен на http://127.0.0.1:{port}[/green]")
     except Exception as error:
-        print(f"[red]Ошибка при запуске MLflow UI: {error}[/red]")
+        print(f"[red]Ошибка при запуске MLflow server: {error}[/red]")
 
 
 @app.command()
@@ -105,9 +115,9 @@ def infer(
 
 @app.command()
 def ui(port: int = mlflow_port_option):
-    """Запускает MLflow UI."""
+    """Запускает MLflow server."""
     run_mlflow_ui(port)
-    print(f"[green]Для доступа к UI откройте: http://127.0.0.1:{port}[/green]")
+    print(f"[green]Для доступа к MLflow откройте: http://127.0.0.1:{port}[/green]")
 
 
 @app.command()

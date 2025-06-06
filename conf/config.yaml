@@ -5,6 +5,9 @@ defaults:
   - logging: logging
   - inference: inference
   - convert: convert
+  - environment: environment
+
 hydra:
   run:
-    dir: ${hydra:runtime.cwd}/plots/outputs/${now:%Y-%m-%d_%H-%M-%S}
+    dir: ${hydra:runtime.cwd}/plots/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  output_subdir: .hydra

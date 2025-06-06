@@ -1,4 +1,4 @@
-experiment_name: "rnn_model_03"
+experiment_name: "rnn_model_01"
 tracking_uri: "http://127.0.0.1:8080"
 mlflow_save_dir: "${hydra:runtime.cwd}/plots/mlruns"
 checkpoint_dir: "${hydra:runtime.cwd}/model_checkpoints"
