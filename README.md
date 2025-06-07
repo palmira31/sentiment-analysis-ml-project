@@ -146,8 +146,8 @@ poetry run python scripts/download_data.py
 
 Запуск с помощью commands.py:
 
-```
-poetry run commands.py download-data
+```bash
+poetry run python commands.py download-data
 ```
 
 ### 2. Запуск MLflow сервера (Терминал 1)
@@ -156,6 +156,12 @@ poetry run commands.py download-data
 
 ```bash
 python -m mlflow server --host 127.0.0.1 --port 8080 --backend-store-uri ./mlruns --default-artifact-root ./artifacts
+```
+
+Для запуска MLflow сервера также можно использовать команду:
+
+```bash
+poetry run python commands.py ui
 ```
 
 После запуска:
@@ -197,12 +203,6 @@ python -m mlflow server --host 127.0.0.1 --port 8080 --backend-store-uri ./mlrun
 1. Загрузить через MLflow API
 2. Использовать для инференса
 3. Развернуть через MLflow serving
-
-Для запуска MLflow сервера также можно использовать команду:
-
-```bash
-poetry run python commands.py ui
-```
 
 Важные замечания:
 
@@ -277,7 +277,10 @@ poetry run python commands.py status
 
 ### Локальный инференс
 
-Для использования обученной модели на новых данных:
+Перед тем, как запускать, внесите в файл conf/inference/inference.yaml название
+{run_id}, под которым автоматически сохранилась модель, а потом вызывайте
+скрипт. Результаты инференса запишутся в папку test_results/ под названием
+test_predictions Для использования обученной модели на новых данных:
 
 ```bash
 poetry run python commands.py infer
@@ -309,13 +312,13 @@ poetry run python commands.py ui
 2. Запустите serving модели (в новом терминале):
 
 ```bash
-mlflow models serve -m "models:/sentiment_classifier_rnn/latest" -p 5001
+mlflow models serve --model-uri "models:/sentiment_classifier_rnn/latest" -p 8080
 ```
 
 3. Теперь можно делать запросы к модели через API:
 
 ```bash
-curl -X POST -H "Content-Type:application/json" --data '{"inputs": ["This is a great movie!", "I did not like this film"]}' http://127.0.0.1:5001/invocations
+curl -X POST -H "Content-Type:application/json" --data '{"inputs": {"text": ["This is a great movie!", "I did not like this film"]}}' http://127.0.0.1:8080/invocations
 ```
 
 Преимущества использования MLflow для инференса:
